@@ -18,16 +18,34 @@ module LanScanner
       network = my_networks
     end
     network = [network] unless network.is_a? Array
-    xml_results = []
+    sn_xml_results = []
     tmp_file = "#{Dir.tmpdir}/nmap_scan.xml"
+    # first we do an -sL scan, which also receives addresses from router/network cache,
+    # that are not found by -sn scan when scanning for the complete network, but are found
+    # with -sn scan, when scanning for this addresses explicitly
+    #
+    # so after this scan we scan for this addresses beneath the networks with -sn
+    sl_xml_results = []
     network.each do |n|
-      ['-sL','-sn'].each do |nmap_type|
+      ['-sL'].each do |nmap_type|
         `nmap #{nmap_type} #{n} -oX "#{tmp_file}"`
-        xml_results.push File.read tmp_file
+        sl_xml_results.push File.read tmp_file
         File.delete tmp_file
       end
     end
-    _parse_nmap_xml xml_results
+    # here we scan for the received ip addresses from network cache
+    sl_ips = _parse_nmap_xml sl_xml_results
+    `nmap -sn #{sl_ips.map(&:remote_address).join(' ')} -oX "#{tmp_file}"`
+    sn_xml_results.push File.read tmp_file
+    # here we ping the networks (fast ping which does not detect all)
+    network.each do |n|
+      ['-sn'].each do |nmap_type|
+        `nmap #{nmap_type} #{n} -oX "#{tmp_file}"`
+        sn_xml_results.push File.read tmp_file
+        File.delete tmp_file
+      end
+    end
+    _parse_nmap_xml sn_xml_results
   end
 
   def self.my_networks
