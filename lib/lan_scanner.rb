@@ -19,7 +19,7 @@ module LanScanner
     end
     network = [network] unless network.is_a? Array
     sn_xml_results = []
-    tmp_file = "#{Dir.tmpdir}/nmap_scan.xml"
+    tmp_file = "#{Dir.tmpdir}/nmap_scan_#{Random.random_number}.xml"
     # first we do an -sL scan, which also receives addresses from router/network cache,
     # that are not found by -sn scan when scanning for the complete network, but are found
     # with -sn scan, when scanning for this addresses explicitly
@@ -46,6 +46,16 @@ module LanScanner
       end
     end
     _parse_nmap_xml sn_xml_results
+  end
+
+  # get states of given addresses
+  def self.scan_device_states addresses
+    addresses = [addresses] unless addresses.is_a? Array
+    tmp_file = "#{Dir.tmpdir}/nmap_scan_#{Random.random_number}.xml"
+    `nmap -sn #{addresses.join(' ')} -oX "#{tmp_file}"`
+    online_hosts = _parse_nmap_xml [File.read(tmp_file)]
+    offline_addresses = addresses.reject { |a| online_hosts.map(&:remote_address).include?(a) }
+    online_hosts + offline_addresses.map { |a| OpenStruct.new(remote_address: a, host_name: nil, state: 'down') }
   end
 
   def self.my_networks
@@ -88,7 +98,7 @@ module LanScanner
     results.values.select do |r|
       r.state == 'up' || r.host_name
     end.map do |r|
-      LanScanner::Device.new host_name: r.host_name, remote_address: r.remote_address
+      LanScanner::Device.new host_name: r.host_name, remote_address: r.remote_address, state: r.state
     end
   end
 end

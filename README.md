@@ -20,7 +20,7 @@ Based on nmap.
 <a name="usage"></a>
 ## Usage
 
-### Find devices in LAN
+### Find online devices in LAN
 ```ruby
 require 'lan_scanner'
 
@@ -43,6 +43,21 @@ end
 
 ```
 
+### Get state of devices in LAN
+
+```ruby
+require 'lan_scanner'
+
+devices = LanScanner.scan_device_states %w[192.168.178.1 192.168.178.22 192.168.178.44]
+# => [LanScanner::Device, LanScanner::Device, ...]
+
+devices.each do |d|
+  puts "#{d.remote_address} -> #{d.host_name} (#{d.state})"
+end
+# 192.168.178.1 -> server.domain (up)
+# 192.168.178.22 -> mycomputer.domain (up)
+# 192.168.178.44 -> (down)
+```
 
 <a name="installation"></a>
 ## Installation
