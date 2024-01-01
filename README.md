@@ -48,7 +48,7 @@ end
 ```ruby
 require 'lan_scanner'
 
-devices = LanScanner.scan_device_states %w[192.168.178.1 192.168.178.22 192.168.178.44]
+devices = LanScanner.scan_device_states %w[192.168.178.1 192.168.178.22 192.168.178.44], expensive: true
 # => [LanScanner::Device, LanScanner::Device, ...]
 
 devices.each do |d|

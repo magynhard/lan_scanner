@@ -49,12 +49,24 @@ module LanScanner
   end
 
   # get states of given addresses
-  def self.scan_device_states addresses
+  # @param [Boolean] expensive make expensive check for devices which were not found by fast check already
+  def self.scan_device_states addresses, expensive: false
     addresses = [addresses] unless addresses.is_a? Array
     tmp_file = "#{Dir.tmpdir}/nmap_scan_#{Random.random_number}.xml"
+    nmap_scan_option = if expensive
+                   '-Pn'
+                 else
+                   '-sn'
+                 end
     `nmap -sn #{addresses.join(' ')} -oX "#{tmp_file}"`
     online_hosts = _parse_nmap_xml [File.read(tmp_file)]
     offline_addresses = addresses.reject { |a| online_hosts.map(&:remote_address).include?(a) }
+    # check offline addresses again with expensive check
+    if expensive
+      `nmap -Pn #{offline_addresses.join(' ')} -oX "#{tmp_file}"`
+      online_hosts += _parse_nmap_xml [File.read(tmp_file)]
+      offline_addresses = addresses.reject { |a| online_hosts.map(&:remote_address).include?(a) }
+    end
     online_hosts + offline_addresses.map { |a| OpenStruct.new(remote_address: a, host_name: nil, state: 'down') }
   end
 
