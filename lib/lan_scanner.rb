@@ -63,7 +63,7 @@ module LanScanner
     offline_addresses = addresses.reject { |a| online_hosts.map(&:remote_address).include?(a) }
     # check offline addresses again with expensive check
     if expensive
-      `nmap -Pn #{offline_addresses.join(' ')} -oX "#{tmp_file}"`
+      `nmap -sP #{offline_addresses.join(' ')} -oX "#{tmp_file}"`
       online_hosts += _parse_nmap_xml [File.read(tmp_file)]
       offline_addresses = addresses.reject { |a| online_hosts.map(&:remote_address).include?(a) }
     end
